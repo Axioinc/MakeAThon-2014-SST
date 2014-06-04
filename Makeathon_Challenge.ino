@@ -22,7 +22,7 @@ char cmdReply[64]; // String buffer
 char commandString[100]; // String to store the new device name and device command into one
 /* End BLEName */
 
-/* Start RainSensor */
+/* Start RainSensor/TempSensor */
 const int dhtPin = A1;   // Is a DHT sensor
 const int winPin = 4;    // Is a servo
 const int errPin = 7;    // Shared reserved error pin
@@ -32,11 +32,11 @@ const int threshold = 50;   // Humidity %
 const int frequency = 1;    // How many probes per second?
 const int caliOff = -10;
 
-int state = HIGH; // LOW means open, HIGH means closed.
+int windowState = HIGH; // LOW means open, HIGH means closed.
 int prev = 0;
 dht11 DHT11;
 Servo windowServo;
-/* End RainSensor */
+/* End RainSensor/TempSensor */
 
 /* Start AndeeHelper */
 AndeeHelper windowDisplay;
@@ -71,10 +71,10 @@ void loop(){
   windowDisplay.update();
   lightSlider.update();
   
-  if (state==HIGH) {
+  if (windowState==HIGH) {
     windowDisplay.setData("Closed");
   }
-  else if (state==LOW) {
+  else if (windowState==LOW) {
     windowDisplay.setData("Open");
   }
   
@@ -130,7 +130,7 @@ void setupRainSensor() {
   pinMode(errPin, OUTPUT);
   
   windowServo.attach(winPin);
-  digitalWrite(winPin, state);
+  digitalWrite(winPin, windowState);
 }
 
 void updateRainSensor() {
@@ -152,11 +152,11 @@ void updateRainSensor() {
   
   Serial.println(DHT11.humidity);
   
-  prev  = state;
-  state = (DHT11.humidity > threshold)?HIGH:LOW;
+  prev = windowState;
+  windowState = (DHT11.humidity > threshold)?HIGH:LOW;
   
-  if (state != prev)
-    windowServo.write(state?30:(winAngle + caliOff + 30)); // To cut down on power-sucking write cycles
+  if (windowState != prev)
+    windowServo.write(windowState?30:(winAngle + caliOff + 30)); // To cut down on power-sucking write cycles
   
   fail: // Failed probe, skip all code and repeat
   delay((int)1000/frequency);

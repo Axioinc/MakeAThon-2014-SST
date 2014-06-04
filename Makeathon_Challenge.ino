@@ -22,7 +22,7 @@ char commandString[100]; // String to store the new device name and device comma
 
 /* Start AndeeHelper */
 AndeeHelper lightDisplay;
-AndeeHelper triggerButton;
+AndeeHelper lightSlider;
 /* End AndeeHelper  */
 
 bool onOffState=true;
@@ -50,35 +50,28 @@ void loop(){
   updateLighting();
   
   //Show data/buttons on screen
-  triggerButton.update();
   lightDisplay.update();
+  lightSlider.update();
   
   lightDisplay.setData(average);
   
-  //Handle if triggerButton is pressed.
-  if(triggerButton.isPressed(1)) {
-    if (onOffState==true) {
-      digitalWrite(5, HIGH);
-      triggerButton.ack();
-      triggerButton.setTitle("Off");
-      onOffState=false;
-    }
-    else if (onOffState==false) {
-      digitalWrite(5, LOW);
-      triggerButton.ack();
-      triggerButton.setTitle("On");
-      onOffState=true;
-    }
-  }
+  // Light Slider handling
+  threshold=lightSlider.getSliderValue(INT);
   
-  delay(10);
+  delay(50);
 }
 
 void setInitialData() {
-  triggerButton.setId(0);
-  triggerButton.setType(BUTTON_IN);
-  triggerButton.setLocation(0,0, FULL);
-  triggerButton.setTitle("On");
+  lightSlider.setId(0);
+  lightSlider.setType(SLIDER_IN);
+  lightSlider.setLocation(0,0, FULL);
+  lightSlider.setTitle("Light Activation Threshold");
+  lightSlider.setSliderMinMax(0,1000,0);
+  lightSlider.setSliderInitialValue(threshold);
+  lightSlider.setSliderNumIntervals(1001);
+  lightSlider.setSliderReportMode(ON_VALUE_CHANGE);
+  lightSlider.setSliderColor(THEME_BLUE_DARK);
+  lightSlider.setColor(THEME_BLUE);
   
   lightDisplay.setId(1);
   lightDisplay.setType(DATA_OUT);

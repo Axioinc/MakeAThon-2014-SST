@@ -39,7 +39,7 @@ Servo windowServo;
 /* End RainSensor */
 
 /* Start AndeeHelper */
-AndeeHelper lightDisplay;
+AndeeHelper windowDisplay;
 AndeeHelper lightSlider;
 /* End AndeeHelper  */
 
@@ -68,10 +68,15 @@ void loop(){
   updateLighting();
   
   //Show data/buttons on screen
-  lightDisplay.update();
+  windowDisplay.update();
   lightSlider.update();
   
-  lightDisplay.setData(average);
+  if (state==HIGH) {
+    windowDisplay.setData("Closed");
+  }
+  else if (state==LOW) {
+    windowDisplay.setData("Open");
+  }
   
   // Light Slider handling
   lightThreshold=lightSlider.getSliderValue(INT);
@@ -91,11 +96,11 @@ void setInitialData() {
   lightSlider.setSliderColor(THEME_BLUE_DARK);
   lightSlider.setColor(THEME_BLUE);
   
-  lightDisplay.setId(1);
-  lightDisplay.setType(DATA_OUT);
-  lightDisplay.setTitle("Light Sensor Readings");
-  lightDisplay.setLocation(1,0,FULL);
-  lightDisplay.setData("");
+  windowDisplay.setId(1);
+  windowDisplay.setType(DATA_OUT);
+  windowDisplay.setTitle("Window Status");
+  windowDisplay.setLocation(1,0,FULL);
+  windowDisplay.setData("");
 }
 
 void getLightData() {
@@ -106,7 +111,6 @@ void getLightData() {
   if (index >= numReadings)
     index = 0;
   average = total / numReadings;
-  Serial.println(average);  
 }
 
 void updateLighting() {

@@ -36,11 +36,21 @@ int windowState = HIGH; // LOW means open, HIGH means closed.
 int prev = 0;
 dht11 DHT11;
 Servo windowServo;
+
+int humidityReadings[numReadings];
+int humidityIndex = 0;
+int humidityTotal = 0;
+int humidityAverage = 0;
+
+float temperature = 0.0;
+float humidity = 0.0;
 /* End RainSensor/TempSensor */
 
 /* Start AndeeHelper */
 AndeeHelper windowDisplay;
 AndeeHelper lightSlider;
+AndeeHelper temperatureDisplay;
+AndeeHelper humidityDisplay;
 /* End AndeeHelper  */
 
 bool onOffState=true;
@@ -63,20 +73,27 @@ void setup(){
   Serial.begin(9600);
 }
 
-void loop(){
+void loop() {
+  // Data retrieval methods here
   getLightData();
   updateLighting();
+  getTemperatureAndHumidityData();
   
-  //Show data/buttons on screen
+  // UI Element update methods here
   windowDisplay.update();
   lightSlider.update();
+  temperatureDisplay.update();
+  humidityDisplay.update();
   
+  // Display code here
   if (windowState==HIGH) {
     windowDisplay.setData("Closed");
   }
   else if (windowState==LOW) {
     windowDisplay.setData("Open");
   }
+  temperatureDisplay.setData(temperature);
+  humidityDisplay.setData(humidity);
   
   // Light Slider handling
   lightThreshold=lightSlider.getSliderValue(INT);
@@ -101,6 +118,20 @@ void setInitialData() {
   windowDisplay.setTitle("Window Status");
   windowDisplay.setLocation(1,0,FULL);
   windowDisplay.setData("");
+  
+  temperatureDisplay.setId(2);
+  temperatureDisplay.setType(DATA_OUT);
+  temperatureDisplay.setTitle("Temperature");
+  temperatureDisplay.setUnit("Celcius");
+  temperatureDisplay.setLocation(2,0,HALF);
+  temperatureDisplay.setData("");
+  
+  humidityDisplay.setId(3);
+  humidityDisplay.setType(DATA_OUT);
+  humidityDisplay.setTitle("Humidity");
+  humidityDisplay.setUnit("%");
+  humidityDisplay.setLocation(2,1,HALF);
+  humidityDisplay.setData("");
 }
 
 void getLightData() {
@@ -122,6 +153,10 @@ void updateLighting() {
   else if (average > lightThreshold) {
     digitalWrite(lightPin, HIGH);
   }
+}
+
+void getTemperatureAndHumidityData() {
+  updateRainSensor();
 }
 
 void setupRainSensor() {
@@ -150,8 +185,17 @@ void updateRainSensor() {
       break;
   }
   
-  Serial.println(DHT11.humidity);
+  humidityTotal= humidityTotal - humidityReadings[humidityIndex];
+  humidityReadings[humidityIndex] = DHT11.humidity;
+  humidityTotal= humidityTotal + humidityReadings[humidityIndex];
+  humidityIndex = humidityIndex + 1;
+  if (humidityIndex >= numReadings)
+    humidityIndex = 0;
+  humidityAverage = humidityTotal / numReadings;
   
+  temperature = DHT11.temperature;
+  humidity = DHT11.humidity;
+    
   prev = windowState;
   windowState = (DHT11.humidity > threshold)?HIGH:LOW;
   

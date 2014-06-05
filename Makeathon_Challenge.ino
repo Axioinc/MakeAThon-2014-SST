@@ -13,7 +13,7 @@ int average = 0;
 int sensorPin=A0;
 int lightPin=2;
 
-int lightThreshold = 750;
+int lightThreshold = 700;
 /* End LightSensor */
 
 /* Start BLEName */
@@ -51,6 +51,7 @@ AndeeHelper windowDisplay;
 AndeeHelper lightSlider;
 AndeeHelper temperatureDisplay;
 AndeeHelper humidityDisplay;
+AndeeHelper currentLight;
 /* End AndeeHelper  */
 
 bool onOffState=true;
@@ -65,6 +66,8 @@ void setup(){
   Andee.sendCommand(commandString, cmdReply);
   
   setInitialData();
+  
+  setupRainSensor();
   
   // Initialize output pins
   pinMode(lightPin, OUTPUT);
@@ -84,6 +87,7 @@ void loop() {
   lightSlider.update();
   temperatureDisplay.update();
   humidityDisplay.update();
+  currentLight.update();
   
   // Display code here
   if (windowState==HIGH) {
@@ -94,6 +98,7 @@ void loop() {
   }
   temperatureDisplay.setData(temperature);
   humidityDisplay.setData(humidity);
+  currentLight.setData(average);
   
   // Light Slider handling
   lightThreshold=lightSlider.getSliderValue(INT);
@@ -119,19 +124,25 @@ void setInitialData() {
   windowDisplay.setLocation(1,0,FULL);
   windowDisplay.setData("");
   
-  temperatureDisplay.setId(2);
+  temperatureDisplay.setId(3);
   temperatureDisplay.setType(DATA_OUT);
   temperatureDisplay.setTitle("Temperature");
-  temperatureDisplay.setUnit("Celcius");
-  temperatureDisplay.setLocation(2,0,HALF);
+  temperatureDisplay.setUnit("Degrees Celsius");
+  temperatureDisplay.setLocation(3,0,HALF);
   temperatureDisplay.setData("");
   
-  humidityDisplay.setId(3);
+  humidityDisplay.setId(4);
   humidityDisplay.setType(DATA_OUT);
   humidityDisplay.setTitle("Humidity");
   humidityDisplay.setUnit("%");
-  humidityDisplay.setLocation(2,1,HALF);
+  humidityDisplay.setLocation(3,0,HALF);
   humidityDisplay.setData("");
+  
+  currentLight.setId(2);
+  currentLight.setType(DATA_OUT);
+  currentLight.setTitle("Current Light Level");
+  currentLight.setLocation(2,0,FULL);
+  currentLight.setData("");
 }
 
 void getLightData() {
@@ -194,13 +205,24 @@ void updateRainSensor() {
   humidityAverage = humidityTotal / numReadings;
   
   temperature = DHT11.temperature;
-  humidity = DHT11.humidity;
+  humidity = humidityAverage;
+  Serial.println(humidityAverage);
     
   prev = windowState;
-  windowState = (DHT11.humidity > threshold)?HIGH:LOW;
+  windowState = (humidityAverage > threshold)?HIGH:LOW;
   
-  if (windowState != prev)
+  /*if (windowState != prev)
     windowServo.write(windowState?30:(winAngle + caliOff + 30)); // To cut down on power-sucking write cycles
+  */
+  
+  if (windowState==HIGH && windowState != prev) {
+    // Closed
+    windowServo.write(60);
+  }
+  else if (windowState=LOW && windowState != prev) {
+    // Open
+    windowServo.write(90);
+  }
   
   fail: // Failed probe, skip all code and repeat
   delay((int)1000/frequency);
